@@ -1,12 +1,13 @@
 from models import DatabaseHandler
 from interfaz_datos import ExtracInfo
+from interfaz_api import InteractWithAPI
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt
 
 ciudadano_blueprint = Blueprint('ciudadano', __name__, url_prefix='/ciudadano')
 db_handler = DatabaseHandler()
-
 info = ExtracInfo()
+gov_carpeta = InteractWithAPI()
 
 @ciudadano_blueprint.route('/login', methods=['POST'])
 def login_ciudadano():
@@ -31,12 +32,27 @@ def register_ciudadano():
         # Extraer datos
         data = request.get_json()
         (cedula, name, email, password, operadorAsociado,
-          number_phone, carpeta) = info.register_ciudadano_data(data)
+          number_phone, address, carpeta) = info.register_ciudadano_data(data)
+        operador = db_handler.get_operador_by_nit(operadorAsociado)
+
+        # Buscar ciudadano
+        status_citizen = gov_carpeta.validateCitizen({'id': cedula}) #Logica para decifrar cedula
+        if status_citizen == 200:
+            return jsonify({'message': 'Ya esta afiliado a un operador'}), 409
+
+        # Registrar ciudadano en gov_carpeta
+        status_register = gov_carpeta.registerCitizen(
+                                    cedula, name, address, email,
+                                     operadorAsociado,
+                                       operador['operador']['name']); #Logica para decifrar datos
+        if not status_register:
+            return jsonify({
+                'message': "No se pudo registrar el ciudadano"}), 500
 
         # Insertar datos en la base de datos
         db_handler.insert_ciudadano(cedula, name, email, password,
-                                     operadorAsociado, number_phone, carpeta)
-
+                                     operadorAsociado, number_phone,
+                                       address, carpeta)
         return jsonify({'message': 'Ciudadano registrado exitosamente'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -45,7 +61,7 @@ def register_ciudadano():
 @jwt_required()
 def update_ciudadano(cedula):
     try:
-        token = get_raw_jwt()['jti']
+        token = get_jwt()['jti']
         if db_handler.is_token_revoked(token):
             return jsonify({'message': 'Token already revoked'}), 401
         # Extraer datos
@@ -80,3 +96,4 @@ def logout_ciudadano():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+#Cambio operador??
