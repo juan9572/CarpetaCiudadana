@@ -1,7 +1,8 @@
+from datetime import timedelta
 from models import DatabaseHandler
 from interfaz_datos import ExtracInfo
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt
+from flask_jwt_extended import create_access_token, jwt_required
 
 admin_blueprint = Blueprint('admin', __name__, url_prefix='/admin')
 db_handler = DatabaseHandler()
@@ -34,7 +35,11 @@ def login_admin():
         admin = db_handler.get_admin_by_name(name)
         if admin is None or admin['password'] != password:
             return jsonify({'error': 'Cédula o constraseña incorrecta'}), 401
-        access_token = create_access_token(identity=admin['name'])
+        access_token = create_access_token(identity=admin['name'],
+                                            expires_delta=timedelta(hours=24))
+
+        #Agregamos el token a la db
+        db_handler.add_activeToken(access_token, '1')
 
         return jsonify({'access_token': access_token}), 200
     except Exception as e:
@@ -44,10 +49,11 @@ def login_admin():
 @jwt_required()
 def logout_admin():
     try:
-        token = get_jwt()['jti']
-        if db_handler.is_token_revoked(token):
-            return jsonify({'message': 'Token already revoked'}), 401
-        db_handler.add_revokedToken(token)
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if not (instance_token and instance_token['typeUser'] == '1'):
+            return jsonify({'message': 'Token not valid'}), 401
+        db_handler.remove_activeToken(token)
         return jsonify({'message': 'Logout exitoso'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -56,9 +62,11 @@ def logout_admin():
 @jwt_required()
 def update_operador():
     try:
-        token = get_jwt()['jti']
-        if db_handler.is_token_revoked(token):
-            return jsonify({'message': 'Token already revoked'}), 401
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if not (instance_token and instance_token['typeUser'] == '1'):
+            return jsonify({'message': 'Token not valid'}), 401
+
         # Extraer datos
         data = request.get_json()
         (name_admin, name_operador,
@@ -87,9 +95,10 @@ def update_operador():
 @jwt_required()
 def add_servicio():
     try:
-        token = get_jwt()['jti']
-        if db_handler.is_token_revoked(token):
-            return jsonify({'message': 'Token already revoked'}), 401
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if not (instance_token and instance_token['typeUser'] == '1'):
+            return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
         data = request.get_json()
@@ -120,9 +129,10 @@ def add_servicio():
 @jwt_required()
 def delete_servicio(name_admin):
     try:
-        token = get_jwt()['jti']
-        if db_handler.is_token_revoked(token):
-            return jsonify({'message': 'Token already revoked'}), 401
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if not (instance_token and instance_token['typeUser'] == '1'):
+            return jsonify({'message': 'Token not valid'}), 401
 
         # Obtener el servicio existente
         admin = db_handler.get_admin_by_name(name_admin)
@@ -138,3 +148,5 @@ def delete_servicio(name_admin):
         return jsonify({'message': 'Servicio eliminado exitosamente'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+#Servicios premium?

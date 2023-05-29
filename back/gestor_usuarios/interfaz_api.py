@@ -10,11 +10,11 @@ class InteractWithAPI:
             "name": name,
             "address": address,
             "email": email,
-            "operatorId": operatorId,
+            "operatorId": operatorId.replace('-', ''),
             "operatorName": operatorName
         }
         response = requests.post(url, json=data)
-        return response.status_code == 200
+        return response.status_code == 201
 
     def validateCitizen(self, data):
         id_citizen = data.get('id')

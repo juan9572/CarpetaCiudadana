@@ -1,6 +1,7 @@
 import os
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 def get_credentials_db():
     host = os.getenv('MONGO_HOST')
@@ -13,8 +14,10 @@ class DatabaseHandler:
         credentialsDB = get_credentials_db()
         client = MongoClient(credentialsDB[0], credentialsDB[1])
         self.db = client['carpeta_ciudadana']
-        self.tokens_revoked_collection = self.db['tokens_revoked']
-        self.tokens_revoked_collection.create_index("token", unique=True)
+        self.tokens_collection = self.db['tokens_active']
+        self.tokens_collection.create_index("token", unique=True)
+        self.tokens_collection.create_index("expire_at",
+                                                     expireAfterSeconds=0)
         self.admin_collection = self.db['administrador']
         self.admin_collection.create_index("name", unique=True)
         self.admin_collection.create_index("operador.nit", unique=True)
@@ -22,6 +25,7 @@ class DatabaseHandler:
                                             unique=True)
         self.ciudadano_collection = self.db['ciudadanos']
         self.ciudadano_collection.create_index("cedula", unique=True)
+        self.ciudadano_collection.create_index("email", unique=True)
 
     def insert_admin(self, name, email, password, operador):
         admin = {
@@ -64,9 +68,13 @@ class DatabaseHandler:
     def update_servicio(self, admin):
         self.admin_collection.replace_one({'name': admin['name']}, admin)
 
-    def add_revokedToken(self, token):
-        self.tokens_revoked_collection.insert_one({'token':token})
+    def add_activeToken(self, token, user):
+        expire_at = datetime.utcnow() + timedelta(hours=24)
+        doc = {'token':token, 'typeUser':user, 'expire_at': expire_at}
+        self.tokens_collection.insert_one(doc)
 
-    def is_token_revoked(self, token):
-        result = self.tokens_revoked_collection.find_one({'token': token})
-        return result is not None
+    def get_activeToken(self, token):
+        return self.tokens_collection.find_one({'token': token})
+
+    def remove_activeToken(self, token):
+        self.tokens_collection.delete_one({'token': token})
