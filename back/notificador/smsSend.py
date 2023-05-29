@@ -1,24 +1,16 @@
 import requests
 
 # Define the endpoint URL
-url = "https://prod-32.westus.logic.azure.com:443/workflows/ba2f39c18662405c8f87fef45595cfed/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=cxY7RgWXif4xBUMiTqz9p-aDirDi4rYr2XH7mIkrjN0"
+url = "https://prod-187.westus.logic.azure.com:443/workflows/4a07565298064a54baddd1e5ce62d3ea/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pd0-NMUTK0RzU-3MpxvzMxwhuzvLmSWk4z6nENy4StI"
 
 # Define the request payload (data to send in the POST request)
 payload = {
-    "emailAdress": "pmayav@eafit.edu.co",
-    "emailSubject": "Test Salomon",
-    "username": "Salomon",
-    "Content": "Succesful test my friend",
+    "phoneAdress": "(+57)3168177190",
+    "content": "Succesful test my friend",
 }
 
-archivos_pdf = ['archivo1.pdf', 'archivo2.pdf', 'archivo3.pdf']
-
-archivos_para_enviar = []
-for archivo in archivos_pdf:
-    archivos_para_enviar.append(('files', open(archivo, 'rb')))
-
 # Send the POST request
-response = requests.post(url, json=payload, files=archivos_para_enviar)
+response = requests.post(url, json=payload)
 
 # Process the response
 if response.status_code == 202:
