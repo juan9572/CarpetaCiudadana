@@ -1,8 +1,9 @@
+from datetime import timedelta
 from models import DatabaseHandler
 from interfaz_datos import ExtracInfo
 from interfaz_api import InteractWithAPI
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt
+from flask_jwt_extended import create_access_token, jwt_required
 
 ciudadano_blueprint = Blueprint('ciudadano', __name__, url_prefix='/ciudadano')
 db_handler = DatabaseHandler()
@@ -20,7 +21,11 @@ def login_ciudadano():
         ciudadano = db_handler.get_ciudadano_by_cedula(cedula)
         if ciudadano is None or ciudadano['password'] != password:
             return jsonify({'error': 'Cédula o constraseña incorrecta'}), 401
-        access_token = create_access_token(identity=ciudadano['cedula'])
+        access_token = create_access_token(identity=ciudadano['cedula'],
+                                            expires_delta=timedelta(hours=24))
+
+        #Agregamos el token a la db
+        db_handler.add_activeToken(access_token, '0')
 
         return jsonify({'access_token': access_token}), 200
     except Exception as e:
@@ -36,7 +41,7 @@ def register_ciudadano():
         operador = db_handler.get_operador_by_nit(operadorAsociado)
 
         # Buscar ciudadano
-        status_citizen = gov_carpeta.validateCitizen({'id': cedula}) #Logica para decifrar cedula
+        status_citizen = gov_carpeta.validateCitizen({'id': cedula})
         if status_citizen == 200:
             return jsonify({'message': 'Ya esta afiliado a un operador'}), 409
 
@@ -44,7 +49,7 @@ def register_ciudadano():
         status_register = gov_carpeta.registerCitizen(
                                     cedula, name, address, email,
                                      operadorAsociado,
-                                       operador['operador']['name']); #Logica para decifrar datos
+                                       operador['operador']['name']);
         if not status_register:
             return jsonify({
                 'message': "No se pudo registrar el ciudadano"}), 500
@@ -61,9 +66,10 @@ def register_ciudadano():
 @jwt_required()
 def update_ciudadano(cedula):
     try:
-        token = get_jwt()['jti']
-        if db_handler.is_token_revoked(token):
-            return jsonify({'message': 'Token already revoked'}), 401
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if not (instance_token and instance_token['typeUser'] == '0'):
+            return jsonify({'message': 'Token not valid'}), 401
         # Extraer datos
         data = request.get_json()
         name, number_phone = info.update_ciudadano_data(data)
@@ -88,12 +94,14 @@ def update_ciudadano(cedula):
 @jwt_required()
 def logout_ciudadano():
     try:
-        token = get_jwt()['jti']
-        if db_handler.is_token_revoked(token):
-            return jsonify({'message': 'Token already revoked'}), 401
-        db_handler.add_revokedToken(token)
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if not (instance_token and instance_token['typeUser'] == '1'):
+            return jsonify({'message': 'Token not valid'}), 401
+        db_handler.remove_activeToken(token)
         return jsonify({'message': 'Logout exitoso'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 #Cambio operador??
+#Logica para decifrar datos
