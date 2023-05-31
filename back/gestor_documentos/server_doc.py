@@ -1,9 +1,9 @@
 import os
 from flask import Flask
-from dotenv import load_dotenv
-from documentos import documentos_blueprint
-from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+from dotenv import load_dotenv
+from flask_jwt_extended import JWTManager
+from documentos import documentos_blueprint
 
 app = Flask(__name__)
 

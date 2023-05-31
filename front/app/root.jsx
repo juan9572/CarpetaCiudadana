@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import styles from "~/tailwind.css";
+const CryptoJS = require('crypto-js');
 
 export function links() {
   return [{rel: 'stylesheet', href: styles}]

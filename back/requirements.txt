@@ -5,3 +5,5 @@ boto3==1.26.142
 flask-jwt-extended==4.5.2
 requests==2.31.0
 flask_cors==3.0.10
+pycryptodomex==3.18.0
+yagmail==0.15.293

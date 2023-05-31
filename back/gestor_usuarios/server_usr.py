@@ -1,10 +1,10 @@
 import os
 from flask import Flask
+from flask_cors import CORS
 from dotenv import load_dotenv
 from admin import admin_blueprint
 from ciudadano import ciudadano_blueprint
 from flask_jwt_extended import JWTManager
-from flask_cors import CORS
 
 app = Flask(__name__)
 

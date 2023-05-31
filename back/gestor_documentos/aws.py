@@ -35,7 +35,7 @@ class uploadFiles:
         url = f'https://{bucket_name}.s3.amazonaws.com/{ruta_archivo}'
         return url
 
-    def share_files(self, files, id_operador, id_ciudadano):
+    def share_files_exist(self, files, id_operador, id_ciudadano):
         urls = []
         bucket_name = 'carpeta.ciudadana'
         for file in files:
@@ -49,6 +49,20 @@ class uploadFiles:
                 Bucket=bucket_name,
                 CopySource={'Bucket': bucket_name, 'Key': file_source},
                 Key=file_destino
+            )
+        return urls
+
+    def share_files_dont_exist(self, files):
+        urls = []
+        bucket_name = 'carpeta.ciudadana'
+        for file in files:
+            file_source = file.split('.com/')[1]
+            file_name = file_source.split('/')[-1]
+            urls.append(file_name)
+            self.s3.download_file(
+                Bucket=bucket_name,
+                Key=file_source,
+                Filename=file_name
             )
         return urls
 

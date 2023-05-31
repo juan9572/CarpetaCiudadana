@@ -1,9 +1,10 @@
 from aws import uploadFiles
 from models import DatabaseHandler
+from flask_jwt_extended import jwt_required
 from interfaz_presentacion import ExtracInfo
 from flask import Blueprint, request, jsonify
 from interfaz_documentos import InteractWithAPI
-from flask_jwt_extended import jwt_required
+from utils import html_structure_for_share, send_email
 
 documentos_blueprint = Blueprint('documentos', __name__, url_prefix='/docs')
 db_handler = DatabaseHandler()
@@ -64,7 +65,7 @@ def delete_folder():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@documentos_blueprint.route('/upload-file', methods=['POST'])
+@documentos_blueprint.route('/upload-file', methods=['POST']) #Falta la lógica para firmar docs
 @jwt_required()
 def upload_file():
     try:
@@ -92,7 +93,7 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@documentos_blueprint.route('/update-file', methods=['POST'])
+@documentos_blueprint.route('/update-file', methods=['POST']) #Falta la lógica para firmar docs
 @jwt_required()
 def update_file():
     try:
@@ -149,7 +150,7 @@ def delete_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@documentos_blueprint.route('/share-files', methods=['POST'])
+@documentos_blueprint.route('/share-files', methods=['POST']) #Falta la lógica para firmar docs
 @jwt_required()
 def share_files():
     try:
@@ -160,16 +161,20 @@ def share_files():
 
         # Extraer datos
         data = request.get_json()
-        files_to_share, ciudadano_destino = info.share_files(data)
+        cedula, files_to_share, ciudadano_destino = info.share_files(data)
+        name = db_handler.ciudadano_collection.find_one(
+            {'cedula': cedula})['name']
         ciudadano = db_handler.get_ciudadano_by_email(ciudadano_destino)
+        asunto = "Carpeta Ciudadana - Tienes un nuevo paquete de documentos"
+        contents = []
+        deleteTemps = (False, [])
         if ciudadano:
             operador = db_handler.get_operador_name_by_cedula_ciudadano(
                 ciudadano['cedula']
             )
-
             # Compartir los archivos del S3 a otro lugar
-            urls = files.share_files(files_to_share['urls'], operador, ciudadano['cedula'])
-
+            urls = files.share_files_exist(files_to_share['urls'], operador,
+                                      ciudadano['cedula'])
             # Actualizar los metadatos en la base de datos
             for i in range(len(urls)):
                 doc = {
@@ -179,9 +184,20 @@ def share_files():
                 }
                 ciudadano['carpeta'].append(doc)
             db_handler.update_folder(ciudadano)
+            contents.append(html_structure_for_share(ciudadano['name'], name,
+                                         files_to_share['name']))
+            contents.append('Los archivos estan disponibles en tu carpeta')
         else:
-            pass
+            urls = files.share_files_dont_exist(files_to_share['urls'])
+            contents.append(html_structure_for_share(ciudadano_destino, name,
+                                         files_to_share['name']))
+            for url in urls:
+                contents.append(url)
+            deleteTemps = (True, urls)
 
-        return jsonify({'message': 'Se compartio exitosamente los documentos'}), 200
+        #Mandar notificación
+        send_email(ciudadano_destino, asunto, contents, deleteTemps)
+        return jsonify(
+            {'message': 'Se compartio exitosamente los documentos'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
