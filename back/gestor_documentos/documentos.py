@@ -229,3 +229,21 @@ def share_files():
             {'message': 'Se compartio exitosamente los documentos'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+
+#generar id
+def generar_id_unico():
+    new_id = uuid.uuid4()
+    return str(new_id)
+
+#generar la notificacion en la base de datos
+@documentos_blueprint.route('/generarnotificacion', methods=['POST'])
+@jwt_required()
+def generar_notificacion(documentos,usuario):
+    id = generar_id_unico
+    objeto = DatabaseHandler()
+    #poner en la base de datos
+    objeto.insert_notificacion(documentos, usuario, id)
+
+
+
+
