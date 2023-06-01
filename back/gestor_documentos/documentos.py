@@ -1,10 +1,11 @@
+import datetime
 from aws import uploadFiles
 from models import DatabaseHandler
 from flask_jwt_extended import jwt_required
 from interfaz_presentacion import ExtracInfo
 from flask import Blueprint, request, jsonify
 from interfaz_documentos import InteractWithAPI
-from utils import html_structure_for_share, send_email
+from utils import html_structure_for_share, send_email, encrypt
 
 documentos_blueprint = Blueprint('documentos', __name__, url_prefix='/docs')
 db_handler = DatabaseHandler()
@@ -50,7 +51,7 @@ def create_folder():
             name = db_handler.get_operador_name_by_name_admin(id)
             files.create_folder(name)
         else:
-            name = db_handler.get_operador_name_by_cedula_ciudadano(id)
+            name = db_handler.get_operador_id_by_cedula_ciudadano(id)
             files.create_folder(f'{name}/{id}')
 
         return jsonify({'message': 'Carpeta creada'}), 200
@@ -76,7 +77,7 @@ def delete_folder():
             name = db_handler.get_operador_name_by_name_admin(id)
             files.delete_folder(name)
         else:
-            name = db_handler.get_operador_name_by_cedula_ciudadano(id)
+            name = db_handler.get_operador_id_by_cedula_ciudadano(id)
             files.delete_folder(f'{name}/{id}')
 
         # Actualizar la base de datos
@@ -97,21 +98,23 @@ def upload_file():
             return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
-        cedula, name, description, file = info.upload_file(request)
-
+        cedula, name, description, temp, file = info.upload_file(request)
         # Agregar archivo
-        operador = db_handler.get_operador_name_by_cedula_ciudadano(cedula)
+        temp = True if temp == "true" else False
+        operador = db_handler.get_operador_id_by_cedula_ciudadano(cedula)
         url_id = files.upload_file(file, file.filename, operador, cedula)
 
         #Guardar en db
         document = {
             'id': url_id,
             'name': name,
-            'descripcion': description
+            'descripcion': description,
+            'creation_time' : datetime.datetime.now(),
+            'temp': temp
         }
         db_handler.insert_doc(cedula, document)
 
-        return jsonify({'message': 'Documento guardado exitosamente'}), 200
+        return jsonify({'message': encrypt(url_id)}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
@@ -132,7 +135,7 @@ def update_file():
         url_id = ""
         if file:
             files.delete_file(doc_id)
-            operador = db_handler.get_operador_name_by_cedula_ciudadano(cedula)
+            operador = db_handler.get_operador_id_by_cedula_ciudadano(cedula)
             url_id = files.upload_file(file, file.filename, operador, cedula)
         else:
             url_id = doc_id
@@ -174,7 +177,7 @@ def delete_file():
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
-@documentos_blueprint.route('/share-files', methods=['POST']) #Falta la lógica para firmar docs
+@documentos_blueprint.route('/share-files', methods=['POST'])
 @jwt_required()
 def share_files():
     try:
@@ -194,7 +197,7 @@ def share_files():
         contents = []
         deleteTemps = (False, [])
         if ciudadano:
-            operador = db_handler.get_operador_name_by_cedula_ciudadano(
+            operador = db_handler.get_operador_id_by_cedula_ciudadano(
                 ciudadano['cedula']
             )
             # Compartir los archivos del S3 a otro lugar

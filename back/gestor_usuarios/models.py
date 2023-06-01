@@ -1,6 +1,6 @@
 import os
-from pymongo import MongoClient
 from dotenv import load_dotenv
+from pymongo import MongoClient
 from datetime import datetime, timedelta
 
 def get_credentials_db():
@@ -46,7 +46,8 @@ class DatabaseHandler:
             'operadorAsociado': operadorAsociado,
             'number_phone': number_phone,
             'address': address,
-            'carpeta' : carpeta
+            'carpeta' : carpeta,
+            'notificacion': []
         }
         self.ciudadano_collection.insert_one(ciudadano)
 

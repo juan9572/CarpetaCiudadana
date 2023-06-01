@@ -25,25 +25,25 @@ class uploadFiles:
         return connection
 
     def delete_file(self, nombre_archivo):
-        nombre = nombre_archivo.split('.com/')[1]
+        nombre = nombre_archivo.split('carpeta.ciudadana/')[1]
         self.s3.delete_object(Bucket='carpeta.ciudadana', Key=nombre)
 
     def upload_file(self, archivo, nombre_archivo, id_operador, id_ciudadano):
         bucket_name = 'carpeta.ciudadana'
         ruta_archivo = f'{id_operador}/{id_ciudadano}/{nombre_archivo}'
         self.s3.upload_fileobj(archivo, bucket_name, ruta_archivo)
-        url = f'https://{bucket_name}.s3.amazonaws.com/{ruta_archivo}'
+        url = f'https://s3.amazonaws.com/{bucket_name}/{ruta_archivo}'
         return url
 
     def share_files_exist(self, files, id_operador, id_ciudadano):
         urls = []
         bucket_name = 'carpeta.ciudadana'
         for file in files:
-            file_source = file.split('.com/')[1]
+            file_source = file.split('carpeta.ciudadana/')[1]
             name_file = os.path.basename(file_source)
             file_destino = f'{id_operador}/{id_ciudadano}/{name_file}'
             urls.append(
-                f'https://{bucket_name}.s3.amazonaws.com/{file_destino}'
+                f'https://s3.amazonaws.com/{bucket_name}/{file_destino}'
             )
             self.s3.copy_object(
                 Bucket=bucket_name,
@@ -56,7 +56,7 @@ class uploadFiles:
         urls = []
         bucket_name = 'carpeta.ciudadana'
         for file in files:
-            file_source = file.split('.com/')[1]
+            file_source = file.split('carpeta.ciudadana/')[1]
             file_name = file_source.split('/')[-1]
             urls.append(file_name)
             self.s3.download_file(
@@ -78,6 +78,3 @@ class uploadFiles:
             self.s3.delete_objects(Bucket=bucket_name,
                                     Delete={'Objects': keys})
         self.s3.delete_object(Bucket=bucket_name, Key=name_folder)
-
-
-#Lógica para desencriptar

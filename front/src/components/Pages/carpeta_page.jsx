@@ -9,21 +9,27 @@ import {
     DialogFooter,
     Input,
     Textarea,
+    Alert,
     List,
     ListItem,
-    ListItemSuffix,
-    Chip,
-    Switch
+    Card,
+    CardBody,
+    Collapse,
+    Switch,
+    Typography
 } from "@material-tailwind/react";
 import axios from 'axios';
 import useAuth from '../Auth/useAuth';
-import { decrypt } from "../util";
+import { encrypt, decrypt } from "../util";
 import {
     ShareIcon,
-    ArrowDownTrayIcon,
-    ArrowUpTrayIcon,
+    DocumentArrowDownIcon,
+    DocumentArrowUpIcon,
+    DocumentMinusIcon,
+    PencilSquareIcon,
     ChatBubbleOvalLeftEllipsisIcon,
-    XMarkIcon
+    XMarkIcon,
+    DocumentMagnifyingGlassIcon
 } from "@heroicons/react/24/solid";
 
 export default function Carpeta() {
@@ -40,16 +46,60 @@ export default function Carpeta() {
     const [openUpload, setOpenUpload] = useState(false);
     const handleOpenUpload = () => setOpenUpload(!openUpload);
 
-    const [numberOfNotifications, setnumberOfNotifications] = useState(0);
+    const [openDelete, setOpenDelete] = useState(false);
+    const handleOpenDelete = () => setOpenDelete(!openDelete);
+
+    const [numberOfNotifications, setnumberOfNotifications] = useState(0); //En el useEffect traer si tiene
 
     const [nombre, setNombre] = useState("");
     const [descripcion, setDescripcion] = useState("");
     const [archivo, setArchivo] = useState(null);
     const [temporal, setTemporal] = useState(false);
 
+    const [selectedProducts, setSelectedProducts] = useState([]);
+    const [isOneProductSelected, setIsOneProductSelected] = useState(false);
+    const [isMoreThanOneProductSelected, setIsMoreThanOneProductSelected] = useState(false);
+
+    const [email, setEmail] = useState("");
+
+    const [notifications, setNotifications] = useState([
+        { 'user': 'Jrawq@gmail.com', 'docs': ['Cedula', 'Visa', 'Registro civil'] },
+        { 'user': 'Jw2da3@gmail.com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
+        { 'user': 'J321com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
+        { 'user': 'gdf.com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
+        { 'user': 'asdgjhg@gmail.com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
+    ]);
+
+    const [openCollapseIndex, setOpenCollapseIndex] = useState(null);
+    const [selectedItemIndex, setSelectedItemIndex] = useState(null);
+    const handleCollapseToggle = (index) => {
+        setOpenCollapseIndex(index === openCollapseIndex ? null : index);
+        setSelectedItemIndex(index === selectedItemIndex ? null : index);
+    };
+
+    const handleToggleSelect = (product) => {
+        if (selectedProducts.includes(product)) {
+            setSelectedProducts((prevSelectedProducts) =>
+                prevSelectedProducts.filter((p) => p !== product)
+            );
+        } else {
+            setSelectedProducts((prevSelectedProducts) => [...prevSelectedProducts, product]);
+        }
+    };
+
+    const handleDownload = () => {
+        selectedProducts.forEach((product) => {
+            window.open(product.id, "_blank");
+        });
+    };
+
     const handleNombreChange = (event) => {
         setNombre(event.target.value);
     };
+
+    const handleEmailChange = (event) => {
+        setEmail(event.target.value);
+    }
 
     const handleDescripcionChange = (event) => {
         setDescripcion(event.target.value);
@@ -64,25 +114,124 @@ export default function Carpeta() {
         setTemporal(event.target.checked);
     };
 
-    const subirArchivos = () => {
-        const formData = new FormData();
-        formData.append("nombre", nombre);
-        formData.append("descripcion", descripcion);
-        formData.append("archivo", archivo);
-        formData.append("esTemporal", temporal);
-        console.log(archivo);
-/*
-        axios.post("http://localhost:5001/docs/upload", formData)
+    const handleDelete = () => {
+        const product = selectedProducts[0];
+        const payload = {
+            cedula: auth.user.cedula,
+            id: encrypt(product.id),
+        };
+        axios.post("http://localhost:5001/docs/delete-file", payload, {
+            headers: {
+                Authorization: "Bearer " + auth.user.token,
+            },
+        }).then((response) => {
+            setProducts((prevProducts) => prevProducts.filter((p) => p.id !== product.id));
+            setSelectedProducts((prevSelectedProducts) => prevSelectedProducts.filter((p) => p.id !== product.id));
+            handleOpenDelete();
+        }).catch((error) => {
+            console.error("Error al borrar el archivo", error);
+        });
+    };
+
+    const mandarPaquete = () => {
+        console.log(notifications[selectedItemIndex])
+
+        /*axios.post(
+            "http://localhost:5001/docs/upload-file",
+            formData,
+            {
+                headers: {
+                    Authorization: "Bearer " + auth.user.token,
+                },
+            })
             .then((response) => {
-                // Lógica para manejar la respuesta del servidor
-                console.log(response.data);
+                const newDoc = {
+                    id: decrypt(response.data.message),
+                    name: nombre,
+                    descripcion: descripcion
+                }
+                setProducts((prevProducts) => [...prevProducts, newDoc]);
+                setNombre("");
+                setDescripcion("");
+                setArchivo(null);
+                setTemporal(false);
+                handleOpenUpload();
             })
             .catch((error) => {
-                // Lógica para manejar el error
                 console.error(error);
             });*/
     }
 
+    const sendPaquete = () => {
+        let request = {
+            cedula: auth.user.cedula,
+            to_whom: encrypt(email),
+            files: {
+                urls: [],
+                name: [],
+                descripcion: []
+            }
+        }
+        for (let i = 0; i < selectedProducts.length; i++) {
+            request.files.urls.push(encrypt(selectedProducts[i].id));
+            request.files.name.push(encrypt(selectedProducts[i].name));
+            request.files.descripcion.push(encrypt(selectedProducts[i].descripcion));
+        }
+        axios.post(
+            "http://localhost:5001/docs/share-files",
+            request,
+            {
+                headers: {
+                    Authorization: "Bearer " + auth.user.token,
+                },
+            })
+            .then((response) => {
+                setEmail("");
+                handleOpenShare();
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    }
+
+    const subirArchivos = () => {
+        const formData = new FormData();
+        formData.append("cedula", auth.user.cedula);
+        formData.append("name", encrypt(nombre));
+        formData.append("descripcion", encrypt(descripcion));
+        formData.append("temp", temporal);
+        formData.append("file", archivo);
+
+        axios.post(
+            "http://localhost:5001/docs/upload-file",
+            formData,
+            {
+                headers: {
+                    Authorization: "Bearer " + auth.user.token,
+                },
+            })
+            .then((response) => {
+                const newDoc = {
+                    id: decrypt(response.data.message),
+                    name: nombre,
+                    descripcion: descripcion
+                }
+                setProducts((prevProducts) => [...prevProducts, newDoc]);
+                setNombre("");
+                setDescripcion("");
+                setArchivo(null);
+                setTemporal(false);
+                handleOpenUpload();
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    }
+
+    useEffect(() => {
+        setIsOneProductSelected(selectedProducts.length === 1);
+        setIsMoreThanOneProductSelected(selectedProducts.length >= 1);
+    }, [selectedProducts]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -124,35 +273,49 @@ export default function Carpeta() {
     return (
         <div className="bg-white">
             <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
-                <div className="flex gap-3 mb-10">
-                    <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <svg aria-hidden="true" className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </div>
-                        <input
-                            type="search"
-                            id="default-search"
-                            className="block p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                            placeholder="Buscar por nombre..."
-                            value={searchTerm}
-                            onChange={handleSearch}
-                        />
+                <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg aria-hidden="true" className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-                    <Button className="flex items-center gap-3">
-                        <ArrowDownTrayIcon strokeWidth={2} className="h-5 w-5" /> Descargar
+                    <input
+                        type="search"
+                        id="default-search"
+                        className="block p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="Buscar por nombre..."
+                        value={searchTerm}
+                        onChange={handleSearch}
+                    />
+                </div>
+                <div className="flex gap-2 mt-5 mb-10">
+                    <Button disabled={!isOneProductSelected} onClick={handleDownload} className="flex items-center gap-3" color="green">
+                        <DocumentArrowDownIcon strokeWidth={2} className="h-5 w-5" /> Descargar
                     </Button>
-                    <Button onClick={handleOpenUpload} className="flex items-center gap-3">
-                        <ArrowUpTrayIcon strokeWidth={2} className="h-5 w-5" /> Subir
+                    <Button onClick={handleOpenUpload} className="flex items-center gap-3" color="green">
+                        <DocumentArrowUpIcon strokeWidth={2} className="h-5 w-5" /> Subir
                     </Button>
-                    <Button onClick={handleOpenShare} className="flex items-center gap-3">
-                        <ShareIcon strokeWidth={2} className="h-5 w-5" /> Compartir
+                    <Button disabled={!isMoreThanOneProductSelected} onClick={handleOpenShare} className="flex items-center gap-3">
+                        <ShareIcon strokeWidth={2} className="h-5 w-5" /> Armar paquete
                     </Button>
                     <Badge content={numberOfNotifications > 0 ? numberOfNotifications : false} withBorder>
-                        <Button onClick={handleOpenNotifications} className="flex items-center gap-3">
+                        <Button disabled={!isMoreThanOneProductSelected} onClick={handleOpenNotifications} className="flex items-center gap-3" color="indigo">
                             <ChatBubbleOvalLeftEllipsisIcon strokeWidth={2} className="h-5 w-5" /> Notificaciones
                         </Button>
                     </Badge>
+                    <Button onClick={handleOpenNotifications} className="flex items-center gap-3" color="orange">
+                        <DocumentMagnifyingGlassIcon strokeWidth={2} className="h-5 w-5" /> Peticiones
+                    </Button>
+                    {
+                        isOneProductSelected && (<>
+                            <Button onClick={handleOpenDelete} className="flex items-center gap-3" color="red">
+                                <DocumentMinusIcon strokeWidth={2} className="h-5 w-5" /> Borrar
+                            </Button>
+                            <Button onClick={null} className="flex items-center gap-3" color="amber">
+                                <PencilSquareIcon strokeWidth={2} className="h-5 w-5" /> Editar
+                            </Button>
+                        </>
+                        )
+                    }
                 </div>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
                     {filteredProducts.map((product) => (
@@ -160,11 +323,16 @@ export default function Carpeta() {
                             key={product.id}
                             className="group rounded-lg bg-gray-50 border border-gray-300 hover:bg-blue-50 hover:border-gray-500"
                         >
-                            <Checkbox key={product.id} />
+                            <Checkbox
+                                key={product.id}
+                                checked={selectedProducts.includes(product)}
+                                onChange={() => handleToggleSelect(product)}
+                            />
                             <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg xl:aspect-h-8 xl:aspect-w-7">
                                 <img
                                     src='https://img.freepik.com/iconos-gratis/pdf_318-148750.jpg'
                                     className="h-full w-full object-cover object-center"
+                                    alt="Pdf image"
                                 />
                             </div>
                             <h3 className="mt-4 text-lg text-gray-700">{product.name}</h3>
@@ -175,21 +343,30 @@ export default function Carpeta() {
             </div>
             <Dialog open={openShare} handler={handleOpenShare}>
                 <div className="flex items-center justify-between">
-                    <DialogHeader>New message to @</DialogHeader>
+                    <DialogHeader>Compartir con</DialogHeader>
                     <XMarkIcon className="mr-3 h-5 w-5 cursor-pointer" onClick={handleOpenShare} />
                 </div>
-                <DialogBody divider>
+                <DialogBody divider className="h-[20rem] overflow-scroll">
                     <div className="grid gap-6">
-                        <Input label="Username" />
-                        <Textarea label="Message" />
+                        <Input
+                            label="Email"
+                            value={email}
+                            onChange={handleEmailChange}
+                        />
+                        Documentos a compartir:
+                        {selectedProducts.map((product, index) => (
+                            <ul>
+                                <li key={index}>- {product.name}</li>
+                            </ul>
+                        ))}
                     </div>
                 </DialogBody>
                 <DialogFooter className="space-x-2">
                     <Button variant="outlined" color="red" onClick={handleOpenShare}>
-                        close
+                        Cancelar
                     </Button>
-                    <Button variant="gradient" color="green" onClick={handleOpenShare}>
-                        send message
+                    <Button variant="gradient" color="green" onClick={sendPaquete}>
+                        Compartir
                     </Button>
                 </DialogFooter>
             </Dialog>
@@ -201,9 +378,9 @@ export default function Carpeta() {
                 <DialogBody divider>
                     <div className="grid gap-6">
                         <Switch
-                        checked={temporal}
-                        label="Documento temporal"
-                        onChange={handleSwitchChange}
+                            checked={temporal}
+                            label="Documento temporal"
+                            onChange={handleSwitchChange}
                         />
                         <Input
                             label="Nombre"
@@ -234,21 +411,63 @@ export default function Carpeta() {
             </Dialog>
             <Dialog open={openNotifications} handler={handleOpenNotifications}>
                 <div className="flex items-center justify-between">
-                    <DialogHeader>New message to @</DialogHeader>
+                    <DialogHeader>Notificaciones</DialogHeader>
                     <XMarkIcon className="mr-3 h-5 w-5 cursor-pointer" onClick={handleOpenNotifications} />
                 </div>
-                <DialogBody divider>
-                    <div className="grid gap-6">
-                        <Input label="Username" />
-                        <Textarea label="Message" />
-                    </div>
+                <DialogBody divider className="h-[20rem] overflow-scroll">
+                    <List>
+                        {notifications.map((notification, index) => (
+                            <ListItem onClick={() => handleCollapseToggle(index)} key={index}>
+                                {notification.user}
+                                <Checkbox
+                                    checked={index === selectedItemIndex}
+                                    onChange={() => handleCollapseToggle(index)}
+                                />
+                                <Collapse open={index === openCollapseIndex}>
+                                    <Card className="my-4 mx-auto w-8/12">
+                                        <CardBody>
+                                            <ul>
+                                                {notification.docs.map((doc) => (
+                                                    <>
+                                                        <li key={doc}>- {doc}</li>
+                                                        <br />
+                                                    </>
+                                                ))}
+                                            </ul>
+                                        </CardBody>
+                                    </Card>
+                                </Collapse>
+                            </ListItem>
+                        ))}
+                    </List>
                 </DialogBody>
                 <DialogFooter className="space-x-2">
                     <Button variant="outlined" color="red" onClick={handleOpenNotifications}>
-                        close
+                        Cancelar
                     </Button>
-                    <Button variant="gradient" color="green" onClick={handleOpenNotifications}>
-                        send message
+                    <Button variant="gradient" color="green" onClick={mandarPaquete}>
+                        Mandar documentos
+                    </Button>
+                </DialogFooter>
+            </Dialog>
+            <Dialog open={openDelete} handler={handleOpenDelete}>
+                <div className="flex items-center justify-between">
+                    <DialogHeader>Borrar documento</DialogHeader>
+                    <XMarkIcon className="mr-3 h-5 w-5 cursor-pointer" onClick={handleOpenDelete} />
+                </div>
+                <DialogBody divider>
+                    <div className="grid gap-6">
+                        <Typography>
+                            Estas seguro que quieres borrar {selectedProducts[0] ? selectedProducts[0].name : ""}
+                        </Typography>
+                    </div>
+                </DialogBody>
+                <DialogFooter className="space-x-2">
+                    <Button variant="outlined" color="red" onClick={handleOpenDelete}>
+                        No
+                    </Button>
+                    <Button variant="gradient" color="green" onClick={handleDelete}>
+                        Si
                     </Button>
                 </DialogFooter>
             </Dialog>

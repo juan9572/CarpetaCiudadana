@@ -18,6 +18,9 @@ class DatabaseHandler:
         self.ciudadano_collection = self.db['ciudadanos']
         self.admin_collection = self.db['administrador']
 
+    def get_temp_documents(self):
+        return self.ciudadano_collection.find({'carpeta.temp': True})
+
     def get_folder(self, cedula):
         carpeta = self.ciudadano_collection.find_one({'cedula': cedula})['carpeta']
         for doc in carpeta:
@@ -29,12 +32,12 @@ class DatabaseHandler:
     def get_ciudadano_by_email(self, email):
         return self.ciudadano_collection.find_one({'email': email})
 
-    def get_operador_name_by_cedula_ciudadano(self, cedula):
+    def get_operador_id_by_cedula_ciudadano(self, cedula):
         ciudadano = self.ciudadano_collection.find_one({'cedula': cedula})
         admin = self.admin_collection.find_one({
-            'operador.nit': ciudadano['operadorAsociado']
+            'operador.id_operador': ciudadano['operadorAsociado']
         })
-        return admin['operador']['name']
+        return admin['operador']['id_operador']
 
     def get_operador_name_by_name_admin(self, name_admin):
         admin = self.admin_collection.find_one({'name': name_admin})
