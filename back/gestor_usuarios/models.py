@@ -80,3 +80,16 @@ class DatabaseHandler:
 
     def remove_activeToken(self, token):
         self.tokens_collection.delete_one({'token': token})
+
+    def insert_notification(self, documents, user, id):
+        notificacion = {
+            'nombre': user,
+            'documentos': documents,
+            'id': id,
+        }
+        # Buscar el documento en base a algún criterio
+        documento = self.ciudadano_colection.find_one({'name': user})
+        # Agregar el atributo al documento
+        documento['notificacion'] = notificacion
+        # Actualizar el documento en la colección
+        self.ciudadano_collection.update_one({'notificacion': notificacion}, {'$set': documento})
