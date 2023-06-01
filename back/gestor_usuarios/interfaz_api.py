@@ -10,7 +10,7 @@ class InteractWithAPI:
             "name": name,
             "address": address,
             "email": email,
-            "operatorId": operatorId.replace('-', ''),
+            "operatorId": operatorId,
             "operatorName": operatorName
         }
         response = requests.post(url, json=data)

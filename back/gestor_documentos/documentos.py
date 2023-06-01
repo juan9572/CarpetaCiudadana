@@ -12,13 +12,33 @@ info = ExtracInfo()
 files = uploadFiles()
 authenticate = InteractWithAPI()
 
+@documentos_blueprint.route('/get-folder', methods=['POST'])
+@jwt_required()
+def get_folder():
+    try:
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
+            return jsonify({'message': 'Token not valid'}), 401
+
+        # Extraer datos
+        data = request.get_json()
+        cedula = info.get_folder(data)
+
+        documents = db_handler.get_folder(cedula)
+        return jsonify({'folder': documents}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
 @documentos_blueprint.route('/create-folder', methods=['POST'])
 @jwt_required()
 def create_folder():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not (instance_token):
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
@@ -35,7 +55,7 @@ def create_folder():
 
         return jsonify({'message': 'Carpeta creada'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @documentos_blueprint.route('/delete-folder', methods=['POST'])
 @jwt_required()
@@ -43,7 +63,8 @@ def delete_folder():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not (instance_token):
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
@@ -63,7 +84,7 @@ def delete_folder():
 
         return jsonify({'message': 'Carpeta eliminada'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @documentos_blueprint.route('/upload-file', methods=['POST']) #Falta la lógica para firmar docs
 @jwt_required()
@@ -71,7 +92,8 @@ def upload_file():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not (instance_token):
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
@@ -91,7 +113,7 @@ def upload_file():
 
         return jsonify({'message': 'Documento guardado exitosamente'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @documentos_blueprint.route('/update-file', methods=['POST']) #Falta la lógica para firmar docs
 @jwt_required()
@@ -99,7 +121,8 @@ def update_file():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not instance_token:
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
@@ -125,7 +148,7 @@ def update_file():
 
         return jsonify({'message': 'Documento actualizado exitosamente'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @documentos_blueprint.route('/delete-file', methods=['POST'])
 @jwt_required()
@@ -133,7 +156,8 @@ def delete_file():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not instance_token:
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
@@ -148,7 +172,7 @@ def delete_file():
 
         return jsonify({'message': 'Documento eliminado exitosamente'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @documentos_blueprint.route('/share-files', methods=['POST']) #Falta la lógica para firmar docs
 @jwt_required()
@@ -156,7 +180,8 @@ def share_files():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not instance_token:
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
 
         # Extraer datos
@@ -200,4 +225,4 @@ def share_files():
         return jsonify(
             {'message': 'Se compartio exitosamente los documentos'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500

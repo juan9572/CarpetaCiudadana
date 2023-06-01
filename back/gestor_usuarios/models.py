@@ -56,11 +56,13 @@ class DatabaseHandler:
     def get_admin_by_name(self, name):
         return self.admin_collection.find_one({'name': name})
 
-    def get_operador_by_nit(self, nit):
-        return self.admin_collection.find_one({'operador.nit': nit})
+    def get_operador_by_id(self, id_operador):
+        return self.admin_collection.find_one(
+            {'operador.id_operador': id_operador})
 
     def update_ciudadano(self, ciudadano):
-        self.ciudadano_collection.replace_one({'cedula': ciudadano['cedula']}, ciudadano)
+        self.ciudadano_collection.replace_one(
+            {'cedula': ciudadano['cedula']}, ciudadano)
 
     def update_operador(self, admin):
         self.admin_collection.replace_one({'name': admin['name']}, admin)

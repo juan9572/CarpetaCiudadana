@@ -20,7 +20,7 @@ def login_ciudadano():
         # Verificar credenciales
         ciudadano = db_handler.get_ciudadano_by_cedula(cedula)
         if ciudadano is None or ciudadano['password'] != password:
-            return jsonify({'error': 'Cédula o constraseña incorrecta'}), 401
+            return jsonify({'message': 'Cédula o constraseña incorrecta'}), 401
         access_token = create_access_token(identity=ciudadano['cedula'],
                                             expires_delta=timedelta(hours=24))
 
@@ -29,7 +29,7 @@ def login_ciudadano():
 
         return jsonify({'access_token': access_token}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @ciudadano_blueprint.route('/register', methods=['POST'])
 def register_ciudadano():
@@ -38,7 +38,7 @@ def register_ciudadano():
         data = request.get_json()
         (cedula, name, email, password, operadorAsociado,
           number_phone, address, carpeta) = info.register_ciudadano_data(data)
-        operador = db_handler.get_operador_by_nit(operadorAsociado)
+        operador = db_handler.get_operador_by_id(operadorAsociado)
 
         # Buscar ciudadano
         status_citizen = gov_carpeta.validateCitizen({'id': cedula})
@@ -58,9 +58,15 @@ def register_ciudadano():
         db_handler.insert_ciudadano(cedula, name, email, password,
                                      operadorAsociado, number_phone,
                                        address, carpeta)
-        return jsonify({'message': 'Ciudadano registrado exitosamente'}), 201
+
+        access_token = create_access_token(identity=cedula,
+                                            expires_delta=timedelta(hours=24))
+
+        #Agregamos el token a la db
+        db_handler.add_activeToken(access_token, '0')
+        return jsonify({'access_token': access_token}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @ciudadano_blueprint.route('/<cedula>', methods=['PUT'])
 @jwt_required()
@@ -68,7 +74,8 @@ def update_ciudadano(cedula):
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not (instance_token and instance_token['typeUser'] == '0'):
+        if ((instance_token and instance_token['typeUser'] == '1') or
+             not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
         # Extraer datos
         data = request.get_json()
@@ -77,7 +84,7 @@ def update_ciudadano(cedula):
         # Verificar si el ciudadano existe
         ciudadano = db_handler.get_ciudadano_by_cedula(cedula)
         if ciudadano is None:
-            return jsonify({'error': 'Cédula no encontrada'}), 404
+            return jsonify({'message': 'Cédula no encontrada'}), 404
 
         # Actualizar los campos modificables del ciudadano
         ciudadano['name'] = name or ciudadano['name']
@@ -88,7 +95,7 @@ def update_ciudadano(cedula):
 
         return jsonify({'message': 'Ciudadano actualizado exitosamente'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @ciudadano_blueprint.route('/logout', methods=['POST'])
 @jwt_required()
@@ -96,12 +103,12 @@ def logout_ciudadano():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not (instance_token and instance_token['typeUser'] == '1'):
+        if ((instance_token and instance_token['typeUser'] == '1') or
+             not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
+
         db_handler.remove_activeToken(token)
         return jsonify({'message': 'Logout exitoso'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
-#Cambio operador??
-#Logica para decifrar datos

@@ -7,7 +7,7 @@ class ExtracInfo:
         name = decrypt(data.get('name'))
         email = decrypt(data.get('email'))
         password = decrypt(data.get('password'))
-        operador = data.get('operador') #decrypt?
+        operador = data.get('operador')
         return name, email, password, operador
 
     def register_ciudadano_data(self, data):
@@ -18,7 +18,7 @@ class ExtracInfo:
         operadorAsociado = decrypt(data.get('operadorAsociado'))
         number_phone = decrypt(data.get('number_phone'))
         address = decrypt(data.get('address'))
-        carpeta = data.get('carpeta') #decrypt?
+        carpeta = data.get('carpeta')
         return (cedula, name, email, password,
                 operadorAsociado, number_phone, address, carpeta)
 

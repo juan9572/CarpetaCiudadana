@@ -22,7 +22,7 @@ def register_admin():
         return jsonify(
             {'message': 'Administrador registrado exitosamente'}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @admin_blueprint.route('/login', methods=['POST'])
 def login_admin():
@@ -34,7 +34,7 @@ def login_admin():
         # Verificar credenciales
         admin = db_handler.get_admin_by_name(name)
         if admin is None or admin['password'] != password:
-            return jsonify({'error': 'Cédula o constraseña incorrecta'}), 401
+            return jsonify({'message': 'Cédula o constraseña incorrecta'}), 401
         access_token = create_access_token(identity=admin['name'],
                                             expires_delta=timedelta(hours=24))
 
@@ -43,7 +43,7 @@ def login_admin():
 
         return jsonify({'access_token': access_token}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @admin_blueprint.route('/logout', methods=['POST'])
 @jwt_required()
@@ -51,12 +51,13 @@ def logout_admin():
     try:
         token = request.headers.get('Authorization').replace('Bearer ', '')
         instance_token = db_handler.get_activeToken(token)
-        if not (instance_token and instance_token['typeUser'] == '1'):
+        if ((instance_token and instance_token['typeUser'] == '0') or
+             not instance_token):
             return jsonify({'message': 'Token not valid'}), 401
         db_handler.remove_activeToken(token)
         return jsonify({'message': 'Logout exitoso'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @admin_blueprint.route('/update_operador', methods=['PUT'])
 @jwt_required()
@@ -75,7 +76,7 @@ def update_operador():
         # Trae al admin existente
         admin = db_handler.get_admin_by_name(name_admin)
         if admin is None:
-            return jsonify({'error': 'Admin no encontrado'}), 404
+            return jsonify({'message': 'Admin no encontrado'}), 404
 
         # Actualizar los campos modificables del ciudadano
         admin['operador']['name'] = name_operador or admin['operador']['name']
@@ -89,7 +90,7 @@ def update_operador():
 
         return jsonify({'message': 'Operador actualizado exitosamente'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @admin_blueprint.route('/update_servicio', methods=['PUT'])
 @jwt_required()
@@ -111,7 +112,7 @@ def add_servicio():
         # Crear un nuevo servicio
         admin = db_handler.get_admin_by_name(name_admin)
         if admin is None:
-            return jsonify({'error': 'Admin no encontrado'}), 404
+            return jsonify({'message': 'Admin no encontrado'}), 404
 
         # Actualizar el servicio en la base de datos
         admin['operador']['serviciosPremium'] = (servicio or
@@ -122,7 +123,7 @@ def add_servicio():
 
         return jsonify({'message': 'Servicio agregado exitosamente'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 @admin_blueprint.route('/delete_servicio/<name_admin>',
                         methods=['DELETE'])
@@ -137,7 +138,7 @@ def delete_servicio(name_admin):
         # Obtener el servicio existente
         admin = db_handler.get_admin_by_name(name_admin)
         if admin is None:
-            return jsonify({'error': 'Admin no encontrado'}), 404
+            return jsonify({'message': 'Admin no encontrado'}), 404
 
         #Borrar servicio
         admin["operador"]["serviciosPremium"] = {}
@@ -147,6 +148,6 @@ def delete_servicio(name_admin):
 
         return jsonify({'message': 'Servicio eliminado exitosamente'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
 
 #Servicios premium?

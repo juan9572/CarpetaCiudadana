@@ -1,6 +1,10 @@
 from utils import decrypt
 
 class ExtracInfo:
+    def get_folder(self, data):
+        cedula = decrypt(data.get('cedula'))
+        return cedula
+
     def create_folder(self, data):
         id = data.get('cedula') or data.get('name_admin')
         return decrypt(id)

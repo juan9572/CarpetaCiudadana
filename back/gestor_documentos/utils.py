@@ -1,9 +1,9 @@
 import os
 import yagmail
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from dotenv import load_dotenv
 from Cryptodome.Cipher import AES
-from Cryptodome.Util.Padding import unpad
+from Cryptodome.Util.Padding import unpad, pad
 
 def decrypt(message):
     load_dotenv()
@@ -12,6 +12,14 @@ def decrypt(message):
     decrypted_message = unpad(cipher.decrypt(b64decode(message)),
                                AES.block_size).decode('utf-8')
     return decrypted_message
+
+def encrypt(message):
+    load_dotenv()
+    key = b64decode(os.getenv('CLAVE_CIFRADO'))
+    cipher = AES.new(key, AES.MODE_ECB)
+    padded_message = pad(message.encode('utf-8'), AES.block_size)
+    encrypted_message = b64encode(cipher.encrypt(padded_message)).decode('utf-8')
+    return encrypted_message
 
 def html_structure_for_share(destinatario, name, files_names):
     mensaje_html = f'''

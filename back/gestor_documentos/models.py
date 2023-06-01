@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from utils import encrypt
 
 def get_credentials_db():
     host = os.getenv('MONGO_HOST')
@@ -16,6 +17,14 @@ class DatabaseHandler:
         self.tokens_collection = self.db['tokens_active']
         self.ciudadano_collection = self.db['ciudadanos']
         self.admin_collection = self.db['administrador']
+
+    def get_folder(self, cedula):
+        carpeta = self.ciudadano_collection.find_one({'cedula': cedula})['carpeta']
+        for doc in carpeta:
+            doc['id'] = encrypt(doc['id'])
+            doc['name'] = encrypt(doc['name'])
+            doc['descripcion'] = encrypt(doc['descripcion'])
+        return carpeta
 
     def get_ciudadano_by_email(self, email):
         return self.ciudadano_collection.find_one({'email': email})
