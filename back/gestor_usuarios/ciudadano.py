@@ -10,6 +10,13 @@ db_handler = DatabaseHandler()
 info = ExtracInfo()
 gov_carpeta = InteractWithAPI()
 
+@ciudadano_blueprint.route('/check', methods=['GET'])
+def login_ciudadano():
+    try:
+        return jsonify({'message': 'Healthy'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
 @ciudadano_blueprint.route('/login', methods=['POST'])
 def login_ciudadano():
     try:
