@@ -11,7 +11,7 @@ info = ExtracInfo()
 gov_carpeta = InteractWithAPI()
 
 @ciudadano_blueprint.route('/check', methods=['GET'])
-def login_ciudadano():
+def check():
     try:
         return jsonify({'message': 'Healthy'}), 200
     except Exception as e:
