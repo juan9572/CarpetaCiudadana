@@ -33,7 +33,7 @@ export default function Profile() {
         // Function to fetch the ciudadano data from the backend
         const fetchCiudadano = async () => {
             try {
-                const response = await axios.post("http://localhost:5000/ciudadano/get-ciudadano",
+                const response = await axios.post("http://72.44.50.23:5000/ciudadano/get-ciudadano",
                     { 'cedula': auth.user.cedula },
                     {
                         headers: {
@@ -91,7 +91,7 @@ export default function Profile() {
             },
         }));
 
-        axios.put("http://localhost:5000/ciudadano/" + decrypt(auth.user.cedula),
+        axios.put("http://72.44.50.23:5000/ciudadano/" + decrypt(auth.user.cedula),
         {
             name: encrypt(formValues.name),
             number_phone: encrypt(formValues.number_phone),

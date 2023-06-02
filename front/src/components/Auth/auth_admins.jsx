@@ -69,7 +69,7 @@ export default function AuthAdmins() {
             return;
         }
         //Validar en el server que si exista
-        const endpoint = 'http://localhost:5000/admin/login';
+        const endpoint = 'http://72.44.50.23:5000/admin/login';
         const admin = {
             "name": encrypt(formValues.username),
             "password": encrypt(formValues.password)

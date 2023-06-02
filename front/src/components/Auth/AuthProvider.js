@@ -40,8 +40,8 @@ const AuthProvider = ({ children }) => {
     },
     logout() {
       const endpoint = (decrypt(user.type) == "0" ?
-        'http://localhost:5000/ciudadano/logout' :
-        'http://localhost:5000/admin/logout'
+        'http://72.44.50.23:5000/ciudadano/logout' :
+        'http://72.44.50.23:5000/admin/logout'
       );
 
       axios.post(endpoint, {}, {

@@ -147,7 +147,7 @@ export default function Carpeta() {
             cedula: auth.user.cedula,
             id: encrypt(product.id),
         };
-        axios.post("http://localhost:5001/docs/delete-file", payload, {
+        axios.post("http://72.44.50.23:5001/docs/delete-file", payload, {
             headers: {
                 Authorization: "Bearer " + auth.user.token,
             },
@@ -165,7 +165,7 @@ export default function Carpeta() {
             cedula: auth.user.cedula,
             id: encrypt(notifications[selectedItemIndex].id),
         };
-        axios.post("http://localhost:5001/docs/rejectPeticion", payload, {
+        axios.post("http://72.44.50.23:5001/docs/rejectPeticion", payload, {
             headers: {
                 Authorization: "Bearer " + auth.user.token,
             },
@@ -190,7 +190,7 @@ export default function Carpeta() {
             id: encrypt(notifications[selectedItemIndex].id),
             docs: docs
         };
-        axios.post("http://localhost:5001/docs/acceptPeticion", payload, {
+        axios.post("http://72.44.50.23:5001/docs/acceptPeticion", payload, {
             headers: {
                 Authorization: "Bearer " + auth.user.token,
             },
@@ -215,7 +215,7 @@ export default function Carpeta() {
             email: encrypt(emailPeticion),
             fromWho: encrypt(endPoint)
         };
-        axios.post("http://localhost:5001/docs/generarPeticion", payload, {
+        axios.post("http://72.44.50.23:5001/docs/generarPeticion", payload, {
             headers: {
                 Authorization: "Bearer " + auth.user.token,
             },
@@ -245,7 +245,7 @@ export default function Carpeta() {
             request.files.descripcion.push(encrypt(selectedProducts[i].descripcion));
         }
         axios.post(
-            "http://localhost:5001/docs/share-files",
+            "http://72.44.50.23:5001/docs/share-files",
             request,
             {
                 headers: {
@@ -270,7 +270,7 @@ export default function Carpeta() {
         formData.append("file", archivo);
 
         axios.post(
-            "http://localhost:5001/docs/upload-file",
+            "http://72.44.50.23:5001/docs/upload-file",
             formData,
             {
                 headers: {
@@ -304,7 +304,7 @@ export default function Carpeta() {
         const fetchData = async () => {
             try {
                 const response = await axios.post(
-                    "http://localhost:5001/docs/get-folder",
+                    "http://72.44.50.23:5001/docs/get-folder",
                     {
                         cedula: auth.user.cedula,
                     },
@@ -315,7 +315,7 @@ export default function Carpeta() {
                     }
                 );
                 const response_peticiones = await axios.post(
-                    "http://localhost:5001/docs/get-peticiones",
+                    "http://72.44.50.23:5001/docs/get-peticiones",
                     {
                         cedula: auth.user.cedula,
                     },

@@ -156,8 +156,8 @@ export default function AuthCiudadano() {
             "carpeta": []
         }
         const endpoint = (isRegisterMode ?
-            'http://localhost:5000/ciudadano/register' :
-            'http://localhost:5000/ciudadano/login'
+            'http://72.44.50.23:5000/ciudadano/register' :
+            'http://72.44.50.23:5000/ciudadano/login'
         );
 
         axios.post(endpoint, ciudadano)
