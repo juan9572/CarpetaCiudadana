@@ -49,7 +49,10 @@ export default function Carpeta() {
     const [openDelete, setOpenDelete] = useState(false);
     const handleOpenDelete = () => setOpenDelete(!openDelete);
 
-    const [numberOfNotifications, setnumberOfNotifications] = useState(0); //En el useEffect traer si tiene
+    const [openPeticion, setOpenPeticion] = useState(false);
+    const handleOpenPeticion = () => setOpenPeticion(!openPeticion);
+
+    const [numberOfNotifications, setnumberOfNotifications] = useState(0);
 
     const [nombre, setNombre] = useState("");
     const [descripcion, setDescripcion] = useState("");
@@ -62,16 +65,40 @@ export default function Carpeta() {
 
     const [email, setEmail] = useState("");
 
-    const [notifications, setNotifications] = useState([
-        { 'user': 'Jrawq@gmail.com', 'docs': ['Cedula', 'Visa', 'Registro civil'] },
-        { 'user': 'Jw2da3@gmail.com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
-        { 'user': 'J321com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
-        { 'user': 'gdf.com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
-        { 'user': 'asdgjhg@gmail.com', 'docs': ['Cedula', 'Tarjeta de identidad', 'Registro civil'] },
-    ]);
+    const [notifications, setNotifications] = useState([]);
+
+    const [frases, setFrases] = useState([]);
+    const [emailPeticion, setEmailPeticion] = useState("");
+    const [endPoint, setEndPoint] = useState("");
 
     const [openCollapseIndex, setOpenCollapseIndex] = useState(null);
     const [selectedItemIndex, setSelectedItemIndex] = useState(null);
+
+    const handleEndPointChange = (event) => {
+        setEndPoint(event.target.value);
+    }
+
+    const handleEmailPeticionChange = (event) => {
+        setEmailPeticion(event.target.value);
+    }
+
+    const handleFraseChange = (event) => {
+        if (event.key === "Enter") {
+            const frase = event.target.value.trim();
+            if (frase !== "") {
+                setFrases([...frases, frase]);
+                event.target.value = ""; // Limpiar el campo de texto
+            }
+        }
+    };
+
+    const handleDeleteFrase = (index) => {
+        const nuevasFrases = [...frases];
+        nuevasFrases.splice(index, 1);
+        setFrases(nuevasFrases);
+    };
+
+
     const handleCollapseToggle = (index) => {
         setOpenCollapseIndex(index === openCollapseIndex ? null : index);
         setSelectedItemIndex(index === selectedItemIndex ? null : index);
@@ -133,33 +160,73 @@ export default function Carpeta() {
         });
     };
 
-    const mandarPaquete = () => {
-        console.log(notifications[selectedItemIndex])
+    const rechazarPaquete = () => {
+        const payload = {
+            cedula: auth.user.cedula,
+            id: encrypt(notifications[selectedItemIndex].id),
+        };
+        axios.post("http://localhost:5001/docs/rejectPeticion", payload, {
+            headers: {
+                Authorization: "Bearer " + auth.user.token,
+            },
+        }).then((response) => {
+            setNotifications((prevNotifications) =>
+                prevNotifications.filter((notification) => notification.id !== notifications[selectedItemIndex].id)
+            );
+            setnumberOfNotifications(numberOfNotifications - 1);
+            handleOpenNotifications();
+        }).catch((error) => {
+            console.error("Error al rechazar la petición", error);
+        });
+    }
 
-        /*axios.post(
-            "http://localhost:5001/docs/upload-file",
-            formData,
-            {
-                headers: {
-                    Authorization: "Bearer " + auth.user.token,
-                },
-            })
-            .then((response) => {
-                const newDoc = {
-                    id: decrypt(response.data.message),
-                    name: nombre,
-                    descripcion: descripcion
-                }
-                setProducts((prevProducts) => [...prevProducts, newDoc]);
-                setNombre("");
-                setDescripcion("");
-                setArchivo(null);
-                setTemporal(false);
-                handleOpenUpload();
-            })
-            .catch((error) => {
-                console.error(error);
-            });*/
+    const aceptarPaquete = () => {
+        let docs = [];
+        for (let i = 0; i < selectedProducts.length; i++) {
+            docs.push(selectedProducts[i].id);
+        }
+        const payload = {
+            cedula: auth.user.cedula,
+            id: encrypt(notifications[selectedItemIndex].id),
+            docs: docs
+        };
+        axios.post("http://localhost:5001/docs/acceptPeticion", payload, {
+            headers: {
+                Authorization: "Bearer " + auth.user.token,
+            },
+        }).then((response) => {
+            setNotifications((prevNotifications) =>
+                prevNotifications.filter((notification) => notification.id !== notifications[selectedItemIndex].id)
+            );
+            setnumberOfNotifications(numberOfNotifications - 1);
+            handleOpenNotifications();
+        }).catch((error) => {
+            console.error("Error al aceptar la petición", error);
+        });
+    }
+
+    const crearPeticion = () => {
+        let encryptFrases = [];
+        for(let i = 0; i < frases.length; i++){
+            encryptFrases.push(encrypt(frases[i]));
+        }
+        const payload = {
+            docs: encryptFrases,
+            email: encrypt(emailPeticion),
+            fromWho: encrypt(endPoint)
+        };
+        axios.post("http://localhost:5001/docs/generarPeticion", payload, {
+            headers: {
+                Authorization: "Bearer " + auth.user.token,
+            },
+        }).then((response) => {
+            setEmailPeticion("");
+            setEndPoint("");
+            setFrases([]);
+            handleOpenPeticion();
+        }).catch((error) => {
+            console.error("Error al aceptar la petición", error);
+        });
     }
 
     const sendPaquete = () => {
@@ -247,6 +314,17 @@ export default function Carpeta() {
                         },
                     }
                 );
+                const response_peticiones = await axios.post(
+                    "http://localhost:5001/docs/get-peticiones",
+                    {
+                        cedula: auth.user.cedula,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + auth.user.token,
+                        },
+                    }
+                )
                 const decryptedProducts = response.data.folder.map((product) => ({
                     ...product,
                     id: decrypt(product.id),
@@ -254,6 +332,8 @@ export default function Carpeta() {
                     descripcion: decrypt(product.descripcion),
                 }));
                 setProducts(decryptedProducts);
+                setNotifications(response_peticiones.data.message)
+                setnumberOfNotifications(response_peticiones.data.message.length)
             } catch (error) {
                 console.error(error);
             }
@@ -302,23 +382,19 @@ export default function Carpeta() {
                             <ChatBubbleOvalLeftEllipsisIcon strokeWidth={2} className="h-5 w-5" /> Notificaciones
                         </Button>
                     </Badge>
-                    <Button onClick={handleOpenNotifications} className="flex items-center gap-3" color="orange">
+                    <Button onClick={handleOpenPeticion} className="flex items-center gap-3" color="orange">
                         <DocumentMagnifyingGlassIcon strokeWidth={2} className="h-5 w-5" /> Peticiones
                     </Button>
                     {
-                        isOneProductSelected && (<>
+                        isOneProductSelected && (
                             <Button onClick={handleOpenDelete} className="flex items-center gap-3" color="red">
                                 <DocumentMinusIcon strokeWidth={2} className="h-5 w-5" /> Borrar
                             </Button>
-                            <Button onClick={null} className="flex items-center gap-3" color="amber">
-                                <PencilSquareIcon strokeWidth={2} className="h-5 w-5" /> Editar
-                            </Button>
-                        </>
                         )
                     }
                 </div>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
-                    {filteredProducts.map((product) => (
+                    {filteredProducts && filteredProducts.map((product) => (
                         <div
                             key={product.id}
                             className="group rounded-lg bg-gray-50 border border-gray-300 hover:bg-blue-50 hover:border-gray-500"
@@ -341,6 +417,49 @@ export default function Carpeta() {
                     ))}
                 </div>
             </div>
+            <Dialog open={openPeticion} handler={handleOpenPeticion}>
+                <div className="flex items-center justify-between">
+                    <DialogHeader>Crear petición</DialogHeader>
+                    <XMarkIcon className="mr-3 h-5 w-5 cursor-pointer" onClick={handleOpenPeticion} />
+                </div>
+                <DialogBody divider className="h-[20rem] overflow-scroll">
+                    <div className="grid gap-6">
+                        <Input
+                            label="Email"
+                            value={emailPeticion}
+                            onChange={handleEmailPeticionChange}
+                        />
+                        <Input
+                            label="endpoint"
+                            value={endPoint}
+                            onChange={handleEndPointChange}
+                        />
+                        <Input
+                            label="Lista"
+                            onKeyUp={handleFraseChange}
+                        />
+                        <li>
+                            <span className="font-bold">Documentos solicitados</span>
+                        </li>
+                        {frases && frases.map((frase, index) => (
+                            <li className="flex items-center gap-3" key={index}>
+                                <div className="flex-grow">
+                                    <span>{frase}</span>
+                                </div>
+                                <button className="text-red-500" onClick={() => handleDeleteFrase(index)}>Eliminar</button>
+                            </li>
+                        ))}
+                    </div>
+                </DialogBody>
+                <DialogFooter className="space-x-2">
+                    <Button variant="outlined" color="red" onClick={handleOpenPeticion}>
+                        Cancelar
+                    </Button>
+                    <Button variant="gradient" color="green" onClick={crearPeticion}>
+                        Crear
+                    </Button>
+                </DialogFooter>
+            </Dialog>
             <Dialog open={openShare} handler={handleOpenShare}>
                 <div className="flex items-center justify-between">
                     <DialogHeader>Compartir con</DialogHeader>
@@ -354,7 +473,7 @@ export default function Carpeta() {
                             onChange={handleEmailChange}
                         />
                         Documentos a compartir:
-                        {selectedProducts.map((product, index) => (
+                        {selectedProducts && selectedProducts.map((product, index) => (
                             <ul>
                                 <li key={index}>- {product.name}</li>
                             </ul>
@@ -416,9 +535,9 @@ export default function Carpeta() {
                 </div>
                 <DialogBody divider className="h-[20rem] overflow-scroll">
                     <List>
-                        {notifications.map((notification, index) => (
+                        {notifications && notifications.map((notification, index) => (
                             <ListItem onClick={() => handleCollapseToggle(index)} key={index}>
-                                {notification.user}
+                                {notification.email}
                                 <Checkbox
                                     checked={index === selectedItemIndex}
                                     onChange={() => handleCollapseToggle(index)}
@@ -427,7 +546,7 @@ export default function Carpeta() {
                                     <Card className="my-4 mx-auto w-8/12">
                                         <CardBody>
                                             <ul>
-                                                {notification.docs.map((doc) => (
+                                                {notification.documentos && notification.documentos.map((doc) => (
                                                     <>
                                                         <li key={doc}>- {doc}</li>
                                                         <br />
@@ -442,10 +561,12 @@ export default function Carpeta() {
                     </List>
                 </DialogBody>
                 <DialogFooter className="space-x-2">
-                    <Button variant="outlined" color="red" onClick={handleOpenNotifications}>
-                        Cancelar
+                    <Button
+                        disabled={notifications[selectedItemIndex] && selectedProducts.length !== notifications[selectedItemIndex].documentos.length} variant="outlined" color="red" onClick={rechazarPaquete}>
+                        Rechazar
                     </Button>
-                    <Button variant="gradient" color="green" onClick={mandarPaquete}>
+                    <Button
+                        disabled={notifications[selectedItemIndex] && selectedProducts.length !== notifications[selectedItemIndex].documentos.length} variant="gradient" color="green" onClick={aceptarPaquete}>
                         Mandar documentos
                     </Button>
                 </DialogFooter>

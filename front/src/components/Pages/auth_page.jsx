@@ -21,10 +21,12 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if(decrypt(auth.user.type) == "1"){
-      navigate('/profile');
-    }else{
-      navigate('/carpeta');
+    if(auth.user){
+      if(decrypt(auth.user.type) == "1"){
+        navigate('/profile');
+      }else{
+        navigate('/carpeta');
+      }
     }
   }, []);
 

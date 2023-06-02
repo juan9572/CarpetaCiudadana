@@ -1,3 +1,4 @@
+import uuid
 from utils import decrypt
 
 class ExtracInfo:
@@ -43,3 +44,37 @@ class ExtracInfo:
             files_to_share['descripcion'][i] = decrypt(files_to_share['descripcion'][i])
         ciudadano_destino = decrypt(data.get('to_whom'))
         return cedula, files_to_share, ciudadano_destino
+
+    def generarNotificacion(self, data):
+        id = self.generar_id_unico()
+        documentos = data.get('docs')
+        email = data.get('email')
+        fromWho = data.get('fromWho')
+        return id, documentos, email, fromWho
+
+    def get_peticion(self, data):
+        cedula = decrypt(data.get('cedula'))
+        return cedula
+
+    def mandarNotificacion(self, data):
+        documentos = data.get('docs')
+        for i in range(len(documentos)):
+            documentos[i] = decrypt(documentos[i])
+        email = decrypt(data.get('email'))
+        fromWho = decrypt(data.get('fromWho'))
+        return documentos, email, fromWho
+
+    def accept_peticion(self, data):
+        id_peticion = decrypt(data.get('id'))
+        cedula = decrypt(data.get('cedula'))
+        documentos = data.get('docs')
+        return cedula ,id_peticion, documentos
+
+    def reject_peticion(self, data):
+        id_peticion = decrypt(data.get('id'))
+        cedula = decrypt(data.get('cedula'))
+        return cedula ,id_peticion
+
+    def generar_id_unico(self):
+        new_id = uuid.uuid4()
+        return str(new_id)

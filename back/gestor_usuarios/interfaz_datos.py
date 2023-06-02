@@ -3,6 +3,10 @@ from utils import decrypt
 # Funciones para manejar los datos
 
 class ExtracInfo:
+    def get_ciudadano(self, data):
+        cedula = decrypt(data.get('cedula'))
+        return cedula
+
     def register_admin_data(self, data):
         name = decrypt(data.get('name'))
         email = decrypt(data.get('email'))
@@ -35,7 +39,8 @@ class ExtracInfo:
     def update_ciudadano_data(self, data):
         name = decrypt(data.get('name'))
         number_phone = decrypt(data.get('number_phone'))
-        return name, number_phone
+        address = decrypt(data.get('address'))
+        return name, number_phone, address
 
     def update_admin_operador(self, data):
         name_admin = decrypt(data.get('name_admin'))

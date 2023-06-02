@@ -1,0 +1,10 @@
+# Define la imagen base
+FROM python:3.11.2-alpine3.17
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY gestor_documentos/ .
+EXPOSE 5001
+
+CMD ["python", "server_doc.py"]

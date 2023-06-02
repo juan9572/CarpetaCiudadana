@@ -18,6 +18,33 @@ class DatabaseHandler:
         self.ciudadano_collection = self.db['ciudadanos']
         self.admin_collection = self.db['administrador']
 
+    def get_endpoint(self, cedula, id):
+        ciudadano = self.ciudadano_collection.find_one({'cedula': cedula})
+        self.ciudadano_collection.update_one({'cedula': cedula},
+                                             {'$pull': {'notificacion':
+                                                         {'id': id}}})
+        endpoint = ""
+        for notificacion in ciudadano['notificacion']:
+            if notificacion['id'] == id:
+                endpoint = notificacion['email']
+                break
+
+        return (ciudadano['email'], endpoint)
+
+    def get_peticiones(self, cedula):
+        ciudadano = self.ciudadano_collection.find_one({'cedula': cedula})
+        return ciudadano['notificacion']
+
+    def insert_notification(self, documents, user, id, fromWho):
+        notificacion = {
+            'email': fromWho,
+            'documentos': documents,
+            'id': id
+        }
+        documento = self.ciudadano_collection.find_one({'email': user})
+        documento['notificacion'].append(notificacion)
+        self.ciudadano_collection.update_one({'email': user}, {'$set': documento})
+
     def get_temp_documents(self):
         return self.ciudadano_collection.find({'carpeta.temp': True})
 

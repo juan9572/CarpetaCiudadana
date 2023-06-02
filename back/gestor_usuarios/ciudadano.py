@@ -31,6 +31,28 @@ def login_ciudadano():
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
+@ciudadano_blueprint.route('/get-ciudadano', methods=['POST'])
+@jwt_required()
+def get_ciudadano():
+    try:
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if ((instance_token and instance_token['typeUser'] == '1') or
+             not instance_token):
+            return jsonify({'message': 'Token not valid'}), 401
+        # Extraer datos
+        data = request.get_json()
+        cedula = info.get_ciudadano(data)
+        ciudadano = db_handler.get_ciudadano_by_cedula(cedula)
+        data = {
+            'name': ciudadano['name'],
+            'number_phone': ciudadano['number_phone'],
+            'address': ciudadano['address']
+        }
+        return jsonify({'message': data}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
 @ciudadano_blueprint.route('/register', methods=['POST'])
 def register_ciudadano():
     try:
@@ -79,7 +101,7 @@ def update_ciudadano(cedula):
             return jsonify({'message': 'Token not valid'}), 401
         # Extraer datos
         data = request.get_json()
-        name, number_phone = info.update_ciudadano_data(data)
+        name, number_phone, address = info.update_ciudadano_data(data)
 
         # Verificar si el ciudadano existe
         ciudadano = db_handler.get_ciudadano_by_cedula(cedula)
@@ -89,6 +111,7 @@ def update_ciudadano(cedula):
         # Actualizar los campos modificables del ciudadano
         ciudadano['name'] = name or ciudadano['name']
         ciudadano['number_phone'] = number_phone or ciudadano['number_phone']
+        ciudadano['address'] = address or ciudadano['address']
 
         # Actualizar el ciudadano en la base de datos
         db_handler.update_ciudadano(ciudadano)

@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required
 from interfaz_presentacion import ExtracInfo
 from flask import Blueprint, request, jsonify
 from interfaz_documentos import InteractWithAPI
-from utils import html_structure_for_share, send_email, encrypt
+from utils import html_structure_for_share, send_email, encrypt, sendSMS, html_structure_for_request
 
 documentos_blueprint = Blueprint('documentos', __name__, url_prefix='/docs')
 db_handler = DatabaseHandler()
@@ -87,7 +87,7 @@ def delete_folder():
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
-@documentos_blueprint.route('/upload-file', methods=['POST']) #Falta la lógica para firmar docs
+@documentos_blueprint.route('/upload-file', methods=['POST'])
 @jwt_required()
 def upload_file():
     try:
@@ -113,7 +113,8 @@ def upload_file():
             'temp': temp
         }
         db_handler.insert_doc(cedula, document)
-
+        if not temp:
+            authenticate.aunthenticateDocument({'cedula': cedula, 'url': url_id})
         return jsonify({'message': encrypt(url_id)}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
@@ -230,20 +231,99 @@ def share_files():
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
-#generar id
-def generar_id_unico():
-    new_id = uuid.uuid4()
-    return str(new_id)
-
-#generar la notificacion en la base de datos
-@documentos_blueprint.route('/generarnotificacion', methods=['POST'])
+@documentos_blueprint.route('/get-peticiones', methods=['POST'])
 @jwt_required()
-def generar_notificacion(documentos,usuario):
-    id = generar_id_unico
-    objeto = DatabaseHandler()
-    #poner en la base de datos
-    objeto.insert_notificacion(documentos, usuario, id)
+def get_peticiones():
+    try:
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
+            return jsonify({'message': 'Token not valid'}), 401
 
+        data = request.get_json()
+        cedula = info.get_peticion(data)
+        peticiones = db_handler.get_peticiones(cedula)
+        return jsonify(
+            {'message': peticiones}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
 
+@documentos_blueprint.route('/generarPeticion', methods=['POST'])
+@jwt_required()
+def mandar_notificacion():
+    try:
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
+            return jsonify({'message': 'Token not valid'}), 401
 
+        data = request.get_json()
+        documentos, email, fromWho = info.mandarNotificacion(data)
+        authenticate.sendPeticion({
+                                'docs': documentos,
+                                'email': email,
+                                'endpoint': fromWho
+                                })
+        return jsonify(
+            {'message': 'Se mando la petición'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
 
+@documentos_blueprint.route('/recibirPeticion', methods=['POST'])
+def generar_notificacion():
+    try:
+        data = request.get_json()
+        id, documentos, email, fromWho = info.generarNotificacion(data)
+        db_handler.insert_notification(documentos, email, id, fromWho)
+        ciudadano = db_handler.get_ciudadano_by_email(email)
+        asunto = "Carpeta Ciudadana - Tienes una nueva petición de documentos"
+        contents = [html_structure_for_request(ciudadano['name'])]
+        send_email(email, asunto, contents, (False, []))
+        sendSMS(ciudadano['number_phone'], asunto)
+        return jsonify(
+            {'message': 'Se recibio la petición'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+@documentos_blueprint.route('/acceptPeticion', methods=['POST'])
+@jwt_required()
+def accept_peticion():
+    try:
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
+            return jsonify({'message': 'Token not valid'}), 401
+
+        data = request.get_json()
+        cedula, id, documentos = info.accept_peticion(data)
+        email, endpoint = db_handler.get_endpoint(cedula, id)
+        authenticate.sendPeticion({
+                                'docs': documentos,
+                                'email': email,
+                                'endpoint': endpoint
+                                })
+        return jsonify(
+            {'message': 'Se acepto la petición'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+@documentos_blueprint.route('/rejectPeticion', methods=['POST'])
+@jwt_required()
+def reject_peticion():
+    try:
+        token = request.headers.get('Authorization').replace('Bearer ', '')
+        instance_token = db_handler.get_activeToken(token)
+        if ((instance_token and instance_token['typeUser'] == '1') or
+            not instance_token):
+            return jsonify({'message': 'Token not valid'}), 401
+
+        data = request.get_json()
+        cedula, id = info.reject_peticion(data)
+        db_handler.get_endpoint(cedula, id)
+        return jsonify(
+            {'message': 'Se rechazo la petición'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
