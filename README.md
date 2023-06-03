@@ -337,15 +337,15 @@ El sistema está planeado para ser un gran repositorio virtual donde los ciudada
 1. ***REQNF (12):** El sistema debe permitir la transferencia directa de documentos entre los operadores sin pasar por el centralizador.*
 
 1. # <a name="_g1p8egms8dm"></a>**Mapeo NFRs VS QoS**
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.001.png)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.001.png)
 1. # <a name="_67pfwgrhamcb"></a><a name="_cbge78klbzx7"></a>**Diagrama de Contexto**
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.002.jpeg)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.002.jpeg)
 1. # <a name="_qpkrvi7mnc7"></a><a name="_wxro4po2chgr"></a>**Architectural Overview**
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.003.png)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.003.png)
 1. # <a name="_vjg2nf4ik6li"></a>**Diagrama de Componentes**
 Los componentes que están en un cuadro naranja son los componentes técnicos y los componentes de aplicación están de color azul.
 
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.004.png)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.004.png)
 
 Componentes de aplicación:
 
@@ -374,13 +374,13 @@ Componentes técnicos:
 - validateCitizen: api para saber si un ciudadano está registrado a un operador.
 
 1. ### <a name="_70xa4rhu1orc"></a>**Sequence Diagram**
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.005.png)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.005.png)
 
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.006.png)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.006.png)
 1. ### <a name="_18yy5vo7plbe"></a>**Entity Model Diagram**
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.007.png)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.007.png)
 1. ### <a name="_rfb6ay9qoz1h"></a>**Deployment Diagram**
-![](Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.008.png)
+![](https://raw.githubusercontent.com/juan9572/CarpetaCiudadana/main/static/Aspose.Words.13fb085f-7337-4ba0-a0ac-cbfe3601abb8.008.png)
 1. ### <a name="_qzjnnth5ja7j"></a>**Architectural Decisions**
 
 
